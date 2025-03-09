@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, HelpCircle } from 'lucide-react';
 import { Switch } from './Switch';
 import { User } from '../types';
 import { toast } from 'react-hot-toast';
@@ -12,6 +12,8 @@ interface WhatsAppConfigModalProps {
     userId?: string;
     isMainDevice: boolean;
     facebookAds: boolean;
+    n8n_webhook?: string;
+    active_ia?: boolean;
   }, userData?: User) => void;
   users: User[];
   loading?: boolean;
@@ -20,12 +22,14 @@ interface WhatsAppConfigModalProps {
     userId?: string;
     isMainDevice?: boolean;
     facebookAds?: boolean;
+    n8n_webhook?: string;
+    active_ia?: boolean;
   };
   existingMainDevice?: boolean;
   isEditing?: boolean;
 }
 
-export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
+const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
   isOpen,
   onClose,
   onSave,
@@ -39,7 +43,10 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
   const [userId, setUserId] = useState(initialConfig?.userId || '');
   const [isMainDevice, setIsMainDevice] = useState(initialConfig?.isMainDevice || false);
   const [facebookAds, setFacebookAds] = useState(initialConfig?.facebookAds || false);
+  const [webhookN8n, setWebhookN8n] = useState(initialConfig?.n8n_webhook || '');
+  const [aiEnabled, setAiEnabled] = useState(initialConfig?.active_ia || false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showWebhookHelp, setShowWebhookHelp] = useState(false);
 
   useEffect(() => {
     if (initialConfig) {
@@ -47,12 +54,15 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
       setUserId(initialConfig.userId || '');
       setIsMainDevice(initialConfig.isMainDevice || false);
       setFacebookAds(initialConfig.facebookAds || false);
+      setWebhookN8n(initialConfig.n8n_webhook || '');
+      setAiEnabled(initialConfig.active_ia || false);
     } else {
-      // Reset form when opening for new instance
       setAlias('');
       setUserId('');
       setIsMainDevice(false);
       setFacebookAds(false);
+      setWebhookN8n('');
+      setAiEnabled(false);
     }
   }, [initialConfig, isOpen]);
 
@@ -66,7 +76,6 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
   }, [userId, users]);
 
   const handleMainDeviceChange = (checked: boolean) => {
-    // Si ya existe un dispositivo principal y no estamos editando el dispositivo principal actual
     if (checked && existingMainDevice && !initialConfig?.isMainDevice) {
       toast.error('Ya existe un dispositivo principal');
       return;
@@ -92,9 +101,13 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
       return;
     }
 
-    // Verificación adicional para evitar múltiples dispositivos principales
     if (isMainDevice && existingMainDevice && !initialConfig?.isMainDevice) {
       toast.error('Ya existe un dispositivo principal');
+      return;
+    }
+
+    if (webhookN8n && !webhookN8n.startsWith('http')) {
+      toast.error('El webhook debe ser una URL válida');
       return;
     }
 
@@ -102,7 +115,9 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
       alias,
       userId: isMainDevice ? undefined : userId,
       isMainDevice,
-      facebookAds
+      facebookAds,
+      n8n_webhook: webhookN8n.trim(),
+      active_ia: aiEnabled
     }, selectedUser || undefined);
   };
 
@@ -112,9 +127,9 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">
+          <h3 className="text-xl font-semibold text-purple-900">
             {isEditing ? 'Editar WhatsApp' : 'Crear WhatsApp'}
           </h3>
           <button
@@ -129,45 +144,68 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="w-12 h-12 text-purple-500 animate-spin mb-4" />
             <p className="text-gray-600 text-center">Cargando usuarios...</p>
-            <p className="text-sm text-gray-500 text-center mt-2">
-              Por favor espere mientras obtenemos la información
-            </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Alias de WhatsApp
-              </label>
-              <input
-                type="text"
-                value={alias}
-                onChange={(e) => setAlias(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
-                placeholder="Ingrese un alias"
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Alias de WhatsApp
+                </label>
+                <input
+                  type="text"
+                  value={alias}
+                  onChange={(e) => setAlias(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Ingrese un alias"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Usuario Asignado
-              </label>
-              <select
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                disabled={isMainDevice}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
-              >
-                <option value="">Seleccione un usuario</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Usuario Asignado
+                </label>
+                <select
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  disabled={isMainDevice}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                >
+                  <option value="">Seleccione un usuario</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="space-y-3">
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Webhook n8n
+                  <button
+                    type="button"
+                    className="ml-2 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowWebhookHelp(!showWebhookHelp)}
+                  >
+                    <HelpCircle className="w-4 h-4 inline" />
+                  </button>
+                </label>
+                {showWebhookHelp && (
+                  <div className="text-xs text-gray-500 mb-2 bg-purple-50 p-2 rounded">
+                    Ingrese la URL del webhook de n8n para procesar los mensajes entrantes.
+                    Debe comenzar con http:// o https://
+                  </div>
+                )}
+                <input
+                  type="url"
+                  value={webhookN8n}
+                  onChange={(e) => setWebhookN8n(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="https://tu-webhook-n8n.com"
+                />
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm font-medium text-gray-700 block">Dispositivo Principal</span>
@@ -189,13 +227,23 @@ export const WhatsAppConfigModal: React.FC<WhatsAppConfigModalProps> = ({
                   onChange={setFacebookAds}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-700">
+                  {aiEnabled ? 'Desactivar IA' : 'Activar IA'}
+                </span>
+                <Switch
+                  checked={aiEnabled}
+                  onChange={setAiEnabled}
+                />
+              </div>
             </div>
 
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex justify-end space-x-3 pt-4 border-t">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
                 Cancelar
               </button>

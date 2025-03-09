@@ -66,6 +66,8 @@ export const createInstance = async (
     const response = await axios.post(`${BASE_URL}/create-instance`, {
       locationId,
       ...config,
+      n8n_webhook: config.n8n_webhook,
+      active_ia: config.active_ia,
       ...(userData && {
         user_name: userData.user_name,
         user_email: userData.user_email,
@@ -152,7 +154,9 @@ export const editInstance = async (
     const response = await axios.put(`${BASE_URL}/edit-instance`, {
       locationId,
       instanceName,
-      ...config
+      ...config,
+      n8n_webhook: config.n8n_webhook,
+      active_ia: config.active_ia
     });
     return response.data;
   } catch (error) {
@@ -181,3 +185,18 @@ export const getInstanceConfig = async (locationId: string, instanceId: string):
     throw new Error('Error al obtener la configuración de la instancia');
   }
 };
+
+// Asegurarse de que todas las funciones estén disponibles para importación
+const api = {
+  getUsers,
+  listInstances,
+  createInstance,
+  refreshQRCode,
+  deleteInstance,
+  getInstanceData,
+  turnOffInstance,
+  editInstance,
+  getInstanceConfig
+};
+
+export default api;

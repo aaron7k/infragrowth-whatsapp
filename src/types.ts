@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export interface UserData {
   id: string | number;
   name: string;
@@ -24,6 +26,8 @@ export interface WhatsAppInstance {
   instance_alias: string;
   main_device: boolean;
   fb_ads: boolean;
+  n8n_webhook?: string;
+  active_ia?: boolean;
   apikey: string;
   location_id: string | null;
   token: string | null;
@@ -40,49 +44,12 @@ export interface InstanceConfig {
   userId?: string;
   isMainDevice: boolean;
   facebookAds: boolean;
+  n8n_webhook?: string;
+  active_ia?: boolean;
   instance_name?: string;
   user_name?: string;
   user_email?: string;
   user_phone?: string;
 }
 
-export interface APIResponse {
-  status?: string;
-  state?: string;
-  qrcode?: string;
-  error?: string;
-  message?: string;
-}
-
-export interface ListInstancesResponse {
-  data: WhatsAppInstance[];
-  message: string;
-  status: boolean;
-}
-
-export interface SingleInstanceResponse {
-  data: {
-    instance_id: number;
-    instance_name: string;
-    apikey: string;
-    token: string | null;
-    user_id: string;
-    locationId: string;
-    user_name: string;
-    user_email: string;
-    user_phone: string;
-    main_device: boolean;
-    fb_ads: boolean;
-    instance_alias: string;
-  };
-  message: string;
-  status: boolean;
-}
-
-export interface InstanceData {
-  name: string;
-  number: string;
-  photo: string;
-  ownerJid?: string;
-  profilePicUrl?: string;
-}
+// ... resto de las interfaces existentes ...

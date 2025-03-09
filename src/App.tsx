@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { InstanceCard } from './components/InstanceCard';
-import { WhatsAppConfigModal } from './components/WhatsAppConfigModal';
+import WhatsAppConfigModal from './components/WhatsAppConfigModal';
 import { LoadingOverlay } from './components/LoadingOverlay';
-import { createInstance, listInstances, getUsers, editInstance, getInstanceConfig, getInstanceData } from './api';
+import api from './api';
 import type { WhatsAppInstance, SingleInstanceResponse, User, InstanceConfig } from './types';
 import InstanceDetailPage from './pages/InstanceDetailPage';
 
 export const App: React.FC = () => {
-  // Get locationId from URL parameters
+  // Obtener locationId de la URL
   const params = new URLSearchParams(window.location.search);
   const locationId = params.get('locationId');
 
@@ -46,7 +46,7 @@ export const App: React.FC = () => {
     }
 
     try {
-      const instancesList = await listInstances(locationId);
+      const instancesList = await api.listInstances(locationId);
       setInstances(instancesList);
       setError(null);
     } catch (error) {
@@ -59,11 +59,14 @@ export const App: React.FC = () => {
   }, [locationId]);
 
   const loadUsers = useCallback(async () => {
-    if (!locationId) return;
+    if (!locationId) {
+      setError('No se proporcionó un ID de ubicación válido');
+      return;
+    }
 
     setLoadingUsers(true);
     try {
-      const usersList = await getUsers(locationId);
+      const usersList = await api.getUsers(locationId);
       setUsers(usersList);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -129,7 +132,7 @@ export const App: React.FC = () => {
     setLoadingUsers(true);
     try {
       await loadUsers();
-      const instanceConfig = await getInstanceConfig(locationId, instance.instance_id.toString());
+      const instanceConfig = await api.getInstanceConfig(locationId, instance.instance_id.toString());
       setIsEditing(true);
       setConfigInstance(instanceConfig);
       setIsModalOpen(true);
@@ -150,7 +153,7 @@ export const App: React.FC = () => {
     if (isEditing && configInstance) {
       setIsSaving(true);
       try {
-        await editInstance(locationId, configInstance.instance_name, config);
+        await api.editInstance(locationId, configInstance.instance_name, config);
         toast.success('Configuración actualizada correctamente');
         await loadInstances();
         setIsModalOpen(false);
@@ -173,7 +176,7 @@ export const App: React.FC = () => {
           user_phone: userData.phone || ''
         } : undefined;
 
-        await createInstance(locationId, {
+        await api.createInstance(locationId, {
           ...config,
           instance_name: instanceName
         }, userDetails);
@@ -197,7 +200,7 @@ export const App: React.FC = () => {
     if (!locationId || !selectedInstance) return;
 
     try {
-      await getInstanceData(locationId, selectedInstance.instance_name);
+      await api.getInstanceData(locationId, selectedInstance.instance_name);
       await loadInstances();
     } catch (error) {
       console.error('Error fetching instance data:', error);
@@ -216,11 +219,7 @@ export const App: React.FC = () => {
   if (!locationId) {
     return (
       <div className="min-h-screen bg-purple-50 flex items-center justify-center">
-        <div className="text-red-600 text-center">
-          <h2 className="text-xl font-semibold mb-2">Error de Configuración</h2>
-          <p>No se proporcionó un ID de ubicación válido en la URL.</p>
-          <p className="text-sm mt-2">Ejemplo: ?locationId=your-location-id</p>
-        </div>
+        <div className="text-red-600">No se proporcionó un ID de ubicación válido</div>
       </div>
     );
   }
@@ -307,7 +306,9 @@ export const App: React.FC = () => {
                 alias: configInstance.instance_alias,
                 userId: configInstance.user_id,
                 isMainDevice: configInstance.main_device,
-                facebookAds: configInstance.fb_ads
+                facebookAds: configInstance.fb_ads,
+                n8n_webhook: configInstance.n8n_webhook,
+                active_ia: configInstance.active_ia
               } : undefined}
               existingMainDevice={hasMainDevice}
               isEditing={isEditing}

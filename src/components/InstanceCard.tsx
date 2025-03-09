@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Smartphone, MessageSquare, Trash2, Power, Settings } from 'lucide-react';
 import type { WhatsAppInstance } from '../types';
-import { deleteInstance, turnOffInstance } from '../api';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
@@ -29,7 +29,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await deleteInstance(locationId, instance.instance_name);
+      await api.deleteInstance(locationId, instance.instance_name);
       toast.success('Instancia eliminada correctamente');
       onInstanceDeleted?.();
     } catch (error) {
@@ -43,7 +43,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
   const handleTurnOff = async () => {
     try {
       setIsTurningOff(true);
-      await turnOffInstance(locationId, instance.instance_name);
+      await api.turnOffInstance(locationId, instance.instance_name);
       toast.success('Instancia desconectada correctamente');
       onInstanceUpdated?.();
     } catch (error) {
@@ -107,11 +107,32 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
             )}
             <div>
               <h3 className="text-lg font-semibold">{instance.instance_alias}</h3>
-              {instance.main_device && (
-                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                  Dispositivo Principal
-                </span>
-              )}
+              <div className="flex flex-wrap gap-2 mt-1">
+                {instance.main_device && (
+                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                    Dispositivo Principal
+                  </span>
+                )}
+                {instance.fb_ads && (
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    Facebook ADS
+                  </span>
+                )}
+                {instance.active_ia && (
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    IA Activada
+                  </span>
+                )}
+                {instance.n8n_webhook ? (
+                  <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full">
+                    Webhook Configurado
+                  </span>
+                ) : (
+                  <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
+                    Sin Webhook
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -130,13 +151,11 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
           {!instance.main_device && instance.userId && (
             <p className="text-sm text-gray-500">Usuario asignado: {instance.userId}</p>
           )}
-          <div className="flex space-x-2">
-            {instance.fb_ads && (
-              <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
-                Facebook ADS
-              </span>
-            )}
-          </div>
+          {instance.n8n_webhook && (
+            <p className="text-sm text-gray-500 truncate" title={instance.n8n_webhook}>
+              Webhook: {instance.n8n_webhook}
+            </p>
+          )}
         </div>
         
         <div className="flex justify-end items-center space-x-2">
@@ -151,7 +170,7 @@ export const InstanceCard: React.FC<InstanceCardProps> = ({
           {!isConnected && (
             <button
               onClick={() => onViewInstance(instance)}
-              className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
             >
               <MessageSquare className="w-4 h-4" />
               <span>Conectar</span>
