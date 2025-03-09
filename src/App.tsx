@@ -9,7 +9,9 @@ import type { WhatsAppInstance, SingleInstanceResponse, User, InstanceConfig } f
 import InstanceDetailPage from './pages/InstanceDetailPage';
 
 export const App: React.FC = () => {
-  const locationId = 'XCrKRkp9vLhW6P6tXIkK';
+  // Get locationId from URL parameters
+  const params = new URLSearchParams(window.location.search);
+  const locationId = params.get('locationId');
 
   const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -37,6 +39,12 @@ export const App: React.FC = () => {
   }, [instances]);
 
   const loadInstances = useCallback(async () => {
+    if (!locationId) {
+      setError('No se proporcionó un ID de ubicación válido');
+      setLoading(false);
+      return;
+    }
+
     try {
       const instancesList = await listInstances(locationId);
       setInstances(instancesList);
@@ -51,6 +59,8 @@ export const App: React.FC = () => {
   }, [locationId]);
 
   const loadUsers = useCallback(async () => {
+    if (!locationId) return;
+
     setLoadingUsers(true);
     try {
       const usersList = await getUsers(locationId);
@@ -66,6 +76,12 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
+      if (!locationId) {
+        setError('No se proporcionó un ID de ubicación válido');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         await loadInstances();
@@ -77,9 +93,14 @@ export const App: React.FC = () => {
       }
     };
     init();
-  }, [loadInstances, loadUsers]);
+  }, [loadInstances, loadUsers, locationId]);
 
   const handleOpenModal = useCallback(async () => {
+    if (!locationId) {
+      toast.error('No se proporcionó un ID de ubicación válido');
+      return;
+    }
+
     if (instances.length >= 5) {
       toast.error('Número máximo de instancias (5) alcanzado');
       return;
@@ -97,9 +118,14 @@ export const App: React.FC = () => {
     } finally {
       setLoadingUsers(false);
     }
-  }, [instances.length, loadUsers]);
+  }, [instances.length, loadUsers, locationId]);
 
   const handleEditConfig = useCallback(async (instance: WhatsAppInstance) => {
+    if (!locationId) {
+      toast.error('No se proporcionó un ID de ubicación válido');
+      return;
+    }
+
     setLoadingUsers(true);
     try {
       await loadUsers();
@@ -116,6 +142,11 @@ export const App: React.FC = () => {
   }, [loadUsers, locationId]);
 
   const handleSaveConfig = useCallback(async (config: InstanceConfig, userData?: User) => {
+    if (!locationId) {
+      toast.error('No se proporcionó un ID de ubicación válido');
+      return;
+    }
+
     if (isEditing && configInstance) {
       setIsSaving(true);
       try {
@@ -163,7 +194,7 @@ export const App: React.FC = () => {
   };
 
   const handleGoBack = async () => {
-    if (!selectedInstance) return;
+    if (!locationId || !selectedInstance) return;
 
     try {
       await getInstanceData(locationId, selectedInstance.instance_name);
@@ -181,6 +212,18 @@ export const App: React.FC = () => {
   const handleInstanceUpdated = useCallback(() => {
     loadInstances();
   }, [loadInstances]);
+
+  if (!locationId) {
+    return (
+      <div className="min-h-screen bg-purple-50 flex items-center justify-center">
+        <div className="text-red-600 text-center">
+          <h2 className="text-xl font-semibold mb-2">Error de Configuración</h2>
+          <p>No se proporcionó un ID de ubicación válido en la URL.</p>
+          <p className="text-sm mt-2">Ejemplo: ?locationId=your-location-id</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
