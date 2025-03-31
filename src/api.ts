@@ -10,7 +10,7 @@ import {
   SingleInstanceResponse 
 } from './types';
 
-const BASE_URL = 'https://webhook.infragrowthai.com/webhook/whatsapp';
+const BASE_URL = 'https://api.infragrowthai.com/webhook/whatsapp';
 
 export const getUsers = async (locationId: string): Promise<User[]> => {
   try {
